@@ -173,7 +173,7 @@ async function renderGrp(){
  $('ginfo').innerHTML='초대코드 <span class="code">'+esc(g.invite_code)+'</span> · 이 코드를 멤버에게 알려주세요 <button class="ghost sm" id="gleave">나가기</button>';
  $('feed').innerHTML='<p class="sub">불러오는 중…</p>';
  try{
-  const rs=chk(await sb.from('requests').select('id,text,created_date,answered_date,answer_note,user_id,profiles(display_name)').eq('shared_group_id',g.id).order('answered_date',{ascending:true,nullsFirst:true}).order('created_at',{ascending:false}));
+  const rs=chk(await sb.from('requests').select('id,text,created_date,answered_date,answer_note,user_id,profiles!requests_user_id_fkey(display_name)').eq('shared_group_id',g.id).order('answered_date',{ascending:true,nullsFirst:true}).order('created_at',{ascending:false}));
   const ids=rs.map(r=>r.id);
   const marks=ids.length?chk(await sb.from('prayed_marks').select('request_id,user_id,day').in('request_id',ids)):[];
   if(!rs.length){$('feed').innerHTML='<p class="sub">아직 함께 기도할 제목이 없어요. 기도제목 탭에서 "함께 기도"로 공유해 보세요.</p>';return}
