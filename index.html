@@ -12,7 +12,22 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<title>기도노트 · 소그룹</title>
+<title>기도노트 · 함께 기도하는 소그룹</title>
+<meta name="description" content="매일의 기도와 묵상을 기록하고, 소그룹과 기도제목을 나누며 함께 기도하는 기도노트예요.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="기도노트">
+<meta property="og:title" content="기도노트 · 함께 기도하는 소그룹 기도방">
+<meta property="og:description" content="매일의 기도를 기록하고, 소그룹과 기도제목을 나누며 함께 기도해요.">
+<meta property="og:url" content="https://gidonote.com/">
+<meta property="og:image" content="https://gidonote.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="기도노트 — 매일의 기도를 기록하고 소그룹과 함께 기도해요">
+<meta property="og:locale" content="ko_KR">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="기도노트 · 함께 기도하는 소그룹 기도방">
+<meta name="twitter:description" content="매일의 기도를 기록하고, 소그룹과 기도제목을 나누며 함께 기도해요.">
+<meta name="twitter:image" content="https://gidonote.com/og-image.png">
 <style>
 :root{--bg:#f7f1e8;--card:#fffdf9;--ink:#3d342b;--mute:#8a7d6f;--acc:#b5835a;--acc2:#7d9a83;--line:#e8dccb}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;padding-bottom:80px}
@@ -43,7 +58,26 @@ select{font:inherit;font-size:15px;padding:6px;border:1px solid var(--line);bord
 #iosSheet .x{position:absolute;right:16px;margin-top:-6px;background:none;color:var(--mute);font-size:22px;padding:4px 8px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+#iabBar{position:fixed;left:0;right:0;top:0;z-index:70;background:#5a3a22;color:#fff;padding:calc(10px + env(safe-area-inset-top)) 40px 10px 14px;font-size:14px;line-height:1.5;box-shadow:0 2px 10px #0003}
+#iabBar.hide{display:none}
+#iabBar .b{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+#iabBar .b a,#iabBar .b button{background:#f7f1e8;color:#5a3a22;border:0;border-radius:16px;padding:6px 14px;font-size:14px;font-weight:700;text-decoration:none}
+#iabBar .ix{position:absolute;right:6px;top:calc(4px + env(safe-area-inset-top));background:none;border:0;color:#fff;font-size:20px;padding:4px 8px}
+</style>
 </head><body>
+<div id="iabBar" class="hide" role="region" aria-label="외부 브라우저 안내"><button class="ix" id="iabX" aria-label="닫기">✕</button><div id="iabMsg"></div><div class="b"><button id="iabCopy">링크 복사</button><a id="iabChrome" class="hide" href="#">크롬으로 열기</a></div></div>
+<script>(function(){var ua=navigator.userAgent;if(/KAKAOTALK/i.test(ua))return;
+var iab=/FBAN|FBAV|FB_IAB|FBIOS|Instagram|Barcelona|Threads|NAVER\(inapp|NAVER|Line\/|DaumApps|everytimeApp|BAND\/|Twitter|TikTok|musical_ly|Snapchat|\bwv\)/i.test(ua);
+if(!iab)return;try{if(sessionStorage.getItem('gidonote.iabHide')==='1')return;}catch(_){}
+var and=/Android/i.test(ua),bar=document.getElementById('iabBar'),U='https://gidonote.com';
+document.getElementById('iabMsg').textContent=and?'📌 우측 상단 ⋮ 버튼을 누르고 “다른 브라우저로 열기”를 선택하면 홈 화면에 앱처럼 추가할 수 있어요.':'📌 우측 상단(또는 하단) ⋯ 버튼을 누르고 “외부 브라우저에서 열기”(Safari로 열기)를 선택하면 홈 화면에 앱처럼 추가할 수 있어요.';
+if(and){var c=document.getElementById('iabChrome');c.href='intent://gidonote.com/#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url='+encodeURIComponent(U)+';end';c.classList.remove('hide');}
+document.getElementById('iabCopy').onclick=function(){var b=this,ok=function(){b.textContent='복사됐어요 ✓';};
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(U).then(ok,function(){fb();});}else fb();
+function fb(){var t=document.createElement('textarea');t.value=U;document.body.appendChild(t);t.select();try{document.execCommand('copy');ok();}catch(_){prompt('이 링크를 복사하세요',U);}t.remove();}};
+document.getElementById('iabX').onclick=function(){bar.classList.add('hide');document.body.style.paddingTop='';try{sessionStorage.setItem('gidonote.iabHide','1');}catch(_){}};
+bar.classList.remove('hide');var pad=function(){if(!bar.classList.contains('hide'))document.body.style.paddingTop=bar.offsetHeight+'px';};pad();addEventListener('resize',pad);})();</script>
 <header><h1>🕊️ 기도노트</h1><div class="sub" id="today"></div></header>
 <main>
 <section id="v-auth" class="hide"><div class="card auth">
