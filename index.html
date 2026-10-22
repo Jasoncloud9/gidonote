@@ -7,6 +7,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="기도노트">
 <meta name="theme-color" content="#f7f1e8">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <title>기도노트 · 소그룹</title>
 <style>
 :root{--bg:#f7f1e8;--card:#fffdf9;--ink:#3d342b;--mute:#8a7d6f;--acc:#b5835a;--acc2:#7d9a83;--line:#e8dccb}
@@ -29,6 +32,12 @@ nav button{font-size:12px}.auth{max-width:420px;margin:30px auto}.err{color:#b45
 select{font:inherit;font-size:15px;padding:6px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
 .feed .who{font-weight:600;font-size:14px}.ans{background:#e8f1ea;border-radius:10px;padding:8px;margin-top:6px;font-size:14px}
 .pr.on{background:var(--acc2)}.code{font-family:ui-monospace,monospace;font-size:18px;letter-spacing:2px;color:var(--acc)}
+#installBtn{position:fixed;right:14px;bottom:calc(70px + env(safe-area-inset-bottom));z-index:50;box-shadow:0 4px 14px #0000002a;border-radius:24px;padding:10px 16px}
+#iosSheet{position:fixed;inset:0;z-index:60;background:#0006;display:flex;align-items:flex-end}
+#iosSheet .sh{background:var(--card);width:100%;border-radius:20px 20px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));box-shadow:0 -4px 20px #0002}
+#iosSheet h3{margin:0 0 6px;font-size:18px}#iosSheet p{margin:6px 0 12px;line-height:1.6;font-size:15px}
+#iosSheet .steps{display:flex;gap:10px;justify-content:center;margin:8px 0 14px}#iosSheet .steps div{flex:1;text-align:center;font-size:13px;color:var(--mute)}
+#iosSheet .x{position:absolute;right:16px;margin-top:-6px;background:none;color:var(--mute);font-size:22px;padding:4px 8px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head><body>
@@ -75,18 +84,17 @@ select{font:inherit;font-size:15px;padding:6px;border:1px solid var(--line);bord
   <div id="impbox" class="hide" style="margin-top:12px"><p class="sub">이 기기에 예전 기도노트 기록이 있어요. 계정으로 옮길까요? (한 번만)</p><button id="impold">예전 기록 가져오기</button></div>
  </div>
 </section>
+<section id="v-admin" class="hide">
+ <div class="card"><h2>관리자</h2><div class="streak"><div><b id="ad-cnt">0</b>전체 가입자</div></div><div class="row"><button class="ghost sm" id="ad-ref">새로고침</button></div></div>
+ <div class="card"><h2>가입자 목록</h2><div id="ad-list" class="sub"></div></div>
+</section>
 </main>
-<nav id="nav" class="hide"><button data-v="today">🙏<br>오늘</button><button data-v="req">📜<br>기도제목</button><button data-v="grp">👥<br>소그룹</button><button data-v="cal">📅<br>달력</button><button data-v="sum">📝<br>정리</button></nav>
+<nav id="nav" class="hide"><button data-v="today">🙏<br>오늘</button><button data-v="req">📜<br>기도제목</button><button data-v="grp">👥<br>소그룹</button><button data-v="cal">📅<br>달력</button><button data-v="sum">📝<br>정리</button><button data-v="admin" id="nav-admin" class="hide">🔑<br>관리자</button></nav>
 <script>
 // ====== 설정: Supabase 프로젝트 값으로 바꾸세요 ======
 const SUPABASE_URL = 'https://zkgxwsppdevxtbjlligh.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_hZ9A86JEZnpETcuS3t6N5A_EeprSSvo';
 // =====================================================
-(function(){
- const mf={name:"기도노트",short_name:"기도노트",start_url:".",display:"standalone",background_color:"#f7f1e8",theme_color:"#f7f1e8",icons:[{src:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#b5835a"/><text x="50" y="68" font-size="56" text-anchor="middle">🕊</text></svg>'),sizes:"any",type:"image/svg+xml"}]};
- const l=document.createElement('link');l.rel='manifest';l.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(mf));document.head.appendChild(l);
- const ai=document.createElement('link');ai.rel='apple-touch-icon';ai.href=mf.icons[0].src;document.head.appendChild(ai);
-})();
 const OLDKEY='prayerApp.v1',MOODS=['감사','평안','기쁨','기대','사랑','회개','답답함','슬픔','불안','지침'];
 const $=i=>document.getElementById(i);
 const pad=n=>(n<10?'0':'')+n,ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()),T=()=>ymd(new Date());
@@ -120,7 +128,7 @@ function maxStreak(keys){keys=keys.filter(has).sort();let m=0,c=0,prev=null;keys
 let sel=[];
 function renderToday(){
  const d=new Date();$('today').textContent=d.getFullYear()+'년 '+(d.getMonth()+1)+'월 '+d.getDate()+'일 ('+'일월화수목금토'[d.getDay()]+')';
- const e=S.entries[T()]||{};$('med').value=e.med||'';$('verse').value=e.verse||'';$('moodtxt').value=e.moodText||'';sel=(e.moods||[]).slice();
+ const e=S.entries[T()]||{};$('med').value=e.med||'';$('verse').value=e.verse||'';$('moodtxt').value=e.moodText||'';sel=(e.moods||[]).slice();const dm=dGet('moods');if(dm!==null){try{sel=JSON.parse(dm)}catch(_){}}restoreDrafts();
  $('moods').innerHTML=MOODS.map(m=>'<button class="chip'+(sel.includes(m)?' on':'')+'" data-m="'+m+'">'+m+'</button>').join('');
  const open=S.reqs.filter(r=>!r.answered);
  $('todayreqs').innerHTML=open.length?open.map(r=>'<label class="chk" style="color:var(--ink)"><input type="checkbox" data-r="'+r.id+'"'+((e.prayed||[]).includes(r.id)?' checked':'')+'>'+esc(r.text)+(r.gid?' 👥':'')+'</label>').join(''):'<p class="sub">기도제목 탭에서 제목을 추가해 보세요.</p>';
@@ -133,7 +141,7 @@ function stats(){
  if(has(T())){p.className='card done';p.innerHTML='🌿 오늘의 기도를 마쳤어요. '+c+'일째 이어가고 있어요. 수고하셨어요.'}
  else{p.className='card prompt';p.innerHTML=(c?'🕯️ 오늘은 아직 기도 기록이 없어요. '+c+'일 연속 기록을 이어가 볼까요?':'🕯️ 오늘 잠시 주님 앞에 머물러 볼까요? 한 줄이면 충분해요.')+'<br><span class="sub">"쉬지 말고 기도하라" (살전 5:17)</span>'}
 }
-$('moods').onclick=ev=>{const m=ev.target.dataset.m;if(!m)return;const i=sel.indexOf(m);i<0?sel.push(m):sel.splice(i,1);ev.target.classList.toggle('on')};
+$('moods').onclick=ev=>{const m=ev.target.dataset.m;if(!m)return;const i=sel.indexOf(m);i<0?sel.push(m):sel.splice(i,1);ev.target.classList.toggle('on');dSet('moods',JSON.stringify(sel))};
 $('save').onclick=async()=>{try{
  const pr=[...document.querySelectorAll('#todayreqs input:checked')].map(x=>x.dataset.r);
  const e={med:$('med').value.trim(),moods:sel.slice(),moodText:$('moodtxt').value.trim(),verse:$('verse').value.trim(),prayed:pr};
@@ -141,7 +149,7 @@ $('save').onclick=async()=>{try{
  // 공유된 기도제목은 소그룹에도 '기도했어요' 표시
  const shared=S.reqs.filter(r=>r.gid&&pr.includes(r.id)).map(r=>({request_id:r.id,user_id:user.id,day:T()}));
  if(shared.length)chk(await sb.from('prayed_marks').upsert(shared,{ignoreDuplicates:true}));
- S.entries[T()]=e;stats();$('saved').textContent='저장됨 ✓';setTimeout(()=>$('saved').textContent='',2000);
+ S.entries[T()]=e;dClear(['med','verse','moodtxt','moods']);stats();$('saved').textContent='저장됨 ✓';setTimeout(()=>$('saved').textContent='',2000);
 }catch(x){err(x)}};
 
 // ---- 기도제목 ----
@@ -155,7 +163,7 @@ function renderReqs(){
   '<div class="row">'+(r.answered?'<button class="ghost sm" data-a="un" data-id="'+r.id+'">응답 취소</button>':'<button class="sm" data-a="ans" data-id="'+r.id+'">응답됨</button>')+'<button class="ghost sm" data-a="edit" data-id="'+r.id+'">수정</button><button class="ghost sm" data-a="del" data-id="'+r.id+'">삭제</button></div></div>').join(''):'<p class="sub">'+(tab==='ans'?'아직 응답받은 기도가 없어요.':'기도 중인 제목이 없어요.')+'</p>';
 }
 $('t-open').onclick=()=>{tab='open';renderReqs()};$('t-ans').onclick=()=>{tab='ans';renderReqs()};
-$('addreq').onclick=async()=>{const t=$('newreq').value.trim();if(!t)return;try{chk(await sb.from('requests').insert({user_id:user.id,text:t,created_date:T()}));$('newreq').value='';await loadMine();renderReqs()}catch(x){err(x)}};
+$('addreq').onclick=async()=>{const t=$('newreq').value.trim();if(!t)return;try{chk(await sb.from('requests').insert({user_id:user.id,text:t,created_date:T()}));$('newreq').value='';dClear(['newreq']);await loadMine();renderReqs()}catch(x){err(x)}};
 $('reqlist').onchange=async ev=>{const id=ev.target.dataset.share;if(!id)return;try{chk(await sb.from('requests').update({shared_group_id:ev.target.value||null}).eq('id',id));await loadMine();renderReqs()}catch(x){err(x)}};
 $('reqlist').onclick=async ev=>{const a=ev.target.dataset.a,id=ev.target.dataset.id;if(!a)return;const r=S.reqs.find(x=>x.id===id);let q=null;
  if(a==='del'){if(!confirm('이 기도제목을 삭제할까요?'))return;q=sb.from('requests').delete().eq('id',id)}
@@ -189,8 +197,8 @@ $('feed').onclick=async ev=>{const id=ev.target.dataset.pray;if(!id)return;try{
  else chk(await sb.from('prayed_marks').upsert({request_id:id,user_id:user.id,day:T()},{ignoreDuplicates:true}));
  renderGrp()}catch(x){err(x)}};
 $('ginfo').onclick=async ev=>{if(ev.target.id!=='gleave')return;if(!confirm('이 소그룹에서 나갈까요? 내가 공유한 기도제목은 나만 보기로 바뀌어요.'))return;try{chk(await sb.rpc('leave_group',{p_group:curG}));curG=null;await loadGroups();await loadMine();renderGrp()}catch(x){err(x)}};
-$('gcreate').onclick=async()=>{const n=$('gname').value.trim();if(!n)return;try{const g=chk(await sb.rpc('create_group',{p_name:n}));curG=g.id;$('gname').value='';await loadGroups();renderGrp();alert('소그룹을 만들었어요! 초대코드: '+g.invite_code)}catch(x){err(x)}};
-$('gjoin').onclick=async()=>{const c=$('gcode').value.trim();if(!c)return;try{curG=chk(await sb.rpc('join_group',{p_code:c}));$('gcode').value='';await loadGroups();renderGrp()}catch(x){alert(/invalid code/.test(x.message)?'초대코드를 다시 확인해 주세요.':'참여하지 못했어요: '+x.message)}};
+$('gcreate').onclick=async()=>{const n=$('gname').value.trim();if(!n)return;try{const g=chk(await sb.rpc('create_group',{p_name:n}));curG=g.id;$('gname').value='';dClear(['gname']);await loadGroups();renderGrp();alert('소그룹을 만들었어요! 초대코드: '+g.invite_code)}catch(x){err(x)}};
+$('gjoin').onclick=async()=>{const c=$('gcode').value.trim();if(!c)return;try{curG=chk(await sb.rpc('join_group',{p_code:c}));$('gcode').value='';dClear(['gcode']);await loadGroups();renderGrp()}catch(x){alert(/invalid code/.test(x.message)?'초대코드를 다시 확인해 주세요.':'참여하지 못했어요: '+x.message)}};
 
 // ---- 달력 ----
 let cm=new Date();cm=new Date(cm.getFullYear(),cm.getMonth(),1);
@@ -243,9 +251,28 @@ $('impold').onclick=async()=>{try{
 }catch(x){err(x)}};
 
 // ---- 화면 전환 / 로그인 ----
-const VIEWS={today:renderToday,req:renderReqs,grp:renderGrp,cal:renderCal,sum:renderSum};
-function show(v){['auth','today','req','grp','cal','sum'].forEach(x=>$('v-'+x).classList.toggle('hide',x!==v));$('nav').classList.toggle('hide',v==='auth');
- document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));if(VIEWS[v])VIEWS[v]();scrollTo(0,0)}
+const VIEWS={today:renderToday,req:renderReqs,grp:renderGrp,cal:renderCal,sum:renderSum,admin:renderAdmin};
+let isAdmin=false;
+const kDate=s=>{if(!s)return '-';const d=new Date(s);return d.getFullYear()+'년 '+(d.getMonth()+1)+'월 '+d.getDate()+'일'};
+async function checkAdmin(){isAdmin=false;try{const r=await sb.rpc('is_admin');isAdmin=!r.error&&r.data===true}catch(_){isAdmin=false}$('nav-admin').classList.toggle('hide',!isAdmin)}
+async function renderAdmin(){if(!isAdmin)return;const L=$('ad-list');L.textContent='불러오는 중…';
+ try{const r=await sb.rpc('admin_list_users');if(r.error)throw r.error;const u=r.data||[];$('ad-cnt').textContent=u.length;
+  L.innerHTML=u.length?u.map(x=>'<div style="padding:10px 0;border-bottom:1px solid rgba(0,0,0,.08)"><b style="color:inherit">'+esc(x.display_name||'(이름 없음)')+'</b><br>'+esc(x.email)+'<br>가입: '+esc(kDate(x.created_at))+' · 최근 로그인: '+esc(kDate(x.last_sign_in_at))+'</div>').join(''):'아직 가입자가 없어요.'}
+ catch(x){L.textContent='목록을 불러오지 못했어요: '+(x.message||x)}}
+$('ad-ref').onclick=()=>renderAdmin();
+// ---- 임시저장 (쓰던 글 자동 보관) ----
+const DRAFT_IDS=['med','verse','moodtxt','newreq','gname','gcode'],DAILY=['med','verse','moodtxt','moods'];
+function dKey(id){return 'gidonote.draft.'+(user?user.id:'anon')+'.'+id+(DAILY.includes(id)?'.'+T():'')}
+function dGet(id){try{return localStorage.getItem(dKey(id))}catch(_){return null}}
+function dSet(id,v){try{localStorage.setItem(dKey(id),v)}catch(_){}}
+function dClear(ids){ids.forEach(id=>{const el=$(id);if(el)delete el.dataset.dirty;try{localStorage.removeItem(dKey(id))}catch(_){}})}
+function restoreDrafts(){DRAFT_IDS.forEach(id=>{const v=dGet(id),el=$(id);if(v!==null&&el&&el.value!==v)el.value=v})}
+function saveDrafts(){DRAFT_IDS.forEach(id=>{const el=$(id);if(el&&el.dataset.dirty)dSet(id,el.value)})}
+DRAFT_IDS.forEach(id=>{const el=$(id);if(el)el.addEventListener('input',()=>{el.dataset.dirty='1';dSet(id,el.value)})});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)saveDrafts()});
+addEventListener('pagehide',saveDrafts);
+function show(v){if(v==='admin'&&!isAdmin)v='today';['auth','today','req','grp','cal','sum','admin'].forEach(x=>$('v-'+x).classList.toggle('hide',x!==v));$('nav').classList.toggle('hide',v==='auth');
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));if(VIEWS[v])VIEWS[v]();restoreDrafts();scrollTo(0,0)}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
 let signup=false;
 $('a-sw').onclick=()=>{signup=!signup;$('a-title').textContent=signup?'회원가입':'로그인';$('a-go').textContent=signup?'가입하기':'로그인';$('a-sw').textContent=signup?'이미 계정이 있어요':'처음이에요 (회원가입)';$('a-namebox').classList.toggle('hide',!signup);$('a-err').textContent=''};
@@ -258,14 +285,14 @@ $('a-go').onclick=async()=>{const email=$('a-email').value.trim(),password=$('a-
  }catch(x){$('a-err').textContent=/Invalid login/i.test(x.message)?'이메일 또는 비밀번호가 맞지 않아요.':/registered/i.test(x.message)?'이미 가입된 이메일이에요. 로그인해 주세요.':x.message}};
 let booted=false;
 async function boot(session){
- if(!session){user=null;booted=false;show('auth');return}
+ if(!session){user=null;booted=false;isAdmin=false;$('nav-admin').classList.add('hide');show('auth');return}
  if(booted&&user&&user.id===session.user.id)return;booted=true;user=session.user;
- try{profile=chk(await sb.from('profiles').select('*').eq('id',user.id).maybeSingle());await Promise.all([loadMine(),loadGroups()]);
+ try{profile=chk(await sb.from('profiles').select('*').eq('id',user.id).maybeSingle());await Promise.all([loadMine(),loadGroups(),checkAdmin()]);
   const h=location.hash.slice(1);show(VIEWS[h]?h:((localStorage.getItem(OLDKEY)&&!localStorage.getItem(OLDKEY+'.imported.'+user.id))?'sum':'today'))}catch(x){err(x)}
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&user&&!$('v-today').classList.contains('hide'))renderToday()});
 // ====== 체험 모드 (?demo): Supabase 대신 메모리 속 예시 데이터 ======
-const DEMO=/[?&]demo\b/.test(location.search);
+const DEMO=/[?&]demo\b/.test(location.search),DEMO_ADMIN=DEMO&&/[?&]admin\b/.test(location.search);
 function makeDemo(){
  const uid=()=>'d'+Math.random().toString(36).slice(2,10),D=n=>addDays(T(),-n),now=()=>new Date().toISOString();
  const ME='u-me',G='g-1';
@@ -307,7 +334,9 @@ function makeDemo(){
    return this.one?(out[0]||null):out}};
  const user={id:ME,email:'demo@gidonote.app'};
  return{from:t=>new Q(t),
-  rpc:async(fn,a)=>{if(fn==='create_group'){const g={id:uid(),name:a.p_name,invite_code:Math.random().toString(36).slice(2,8).toUpperCase(),owner_id:ME};db.groups.push(g);db.group_members.push({group_id:g.id,user_id:ME});return{data:g,error:null}}
+  rpc:async(fn,a)=>{if(fn==='is_admin')return DEMO_ADMIN?{data:true,error:null}:{data:null,error:new Error('function is_admin() does not exist')};
+   if(fn==='admin_list_users'){if(!DEMO_ADMIN)return{data:null,error:new Error('not authorized')};return{data:db.profiles.map((p,i)=>({email:(p.id===ME?'demo':'user'+i)+'@gidonote.app',display_name:p.display_name,created_at:new Date(Date.now()-(i+1)*864e5*3).toISOString(),last_sign_in_at:new Date(Date.now()-i*36e5).toISOString()})),error:null}}
+   if(fn==='create_group'){const g={id:uid(),name:a.p_name,invite_code:Math.random().toString(36).slice(2,8).toUpperCase(),owner_id:ME};db.groups.push(g);db.group_members.push({group_id:g.id,user_id:ME});return{data:g,error:null}}
    if(fn==='join_group'){const g=db.groups.find(x=>x.invite_code===String(a.p_code).trim().toUpperCase());if(!g)return{data:null,error:new Error('invalid code')};if(!db.group_members.some(m=>m.group_id===g.id&&m.user_id===ME))db.group_members.push({group_id:g.id,user_id:ME});return{data:g.id,error:null}}
    if(fn==='leave_group'){db.requests.forEach(r=>{if(r.user_id===ME&&r.shared_group_id===a.p_group)r.shared_group_id=null});db.group_members=db.group_members.filter(m=>!(m.group_id===a.p_group&&m.user_id===ME));return{data:null,error:null}}},
   auth:{getSession:async()=>({data:{session:{user}}}),onAuthStateChange(){},signOut:async()=>{location.href=location.pathname+'?demo'}}};
@@ -321,4 +350,47 @@ else if(SUPABASE_URL.indexOf('http')!==0||!window.supabase){
  sb.auth.getSession().then(r=>boot(r.data.session));
  sb.auth.onAuthStateChange((ev,s)=>{setTimeout(()=>boot(s),0)});
 }
-</script></body></html>
+</script>
+<button id="installBtn" class="hide" type="button">📲 앱 설치</button>
+<div id="iosSheet" class="hide" role="dialog" aria-label="홈 화면에 추가 안내"><div class="sh">
+<button class="x" id="iosClose" type="button" aria-label="닫기">✕</button>
+<h3>기도노트를 앱처럼 쓰기</h3>
+<p><b>공유 버튼(□↑)</b>을 누른 뒤 <b>“홈 화면에 추가”</b>를 누르세요.</p>
+<div class="steps">
+<div><svg width="64" height="64" viewBox="0 0 64 64"><rect x="2" y="2" width="60" height="60" rx="14" fill="#fbead6"/><path d="M22 28h-4v22h28V28h-4" fill="none" stroke="#2f7bf6" stroke-width="3" stroke-linejoin="round"/><path d="M32 40V12M24 20l8-8 8 8" fill="none" stroke="#2f7bf6" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><br>① 공유 버튼</div>
+<div style="align-self:center;font-size:22px">→</div>
+<div><svg width="64" height="64" viewBox="0 0 64 64"><rect x="2" y="2" width="60" height="60" rx="14" fill="#fbead6"/><rect x="16" y="16" width="32" height="32" rx="7" fill="none" stroke="#3d342b" stroke-width="3"/><path d="M32 24v16M24 32h16" stroke="#3d342b" stroke-width="3" stroke-linecap="round"/></svg><br>② 홈 화면에 추가</div>
+</div>
+<button type="button" id="iosOk" style="width:100%">확인</button>
+</div></div>
+<script>
+(function(){
+ const standalone=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+ if('serviceWorker' in navigator){
+  let reloaded=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(reloaded)return;reloaded=true;
+   const busy=document.activeElement&&/TEXTAREA|INPUT/.test(document.activeElement.tagName);if(!busy)location.reload();});
+  window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').then(r=>{
+   r.update();document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')r.update();});
+   r.addEventListener('updatefound',()=>{const w=r.installing;w&&w.addEventListener('statechange',()=>{if(w.state==='installed'&&navigator.serviceWorker.controller)w.postMessage('skipWaiting');});});
+  }).catch(e=>console.warn('SW',e)));
+ }
+ // 안드로이드/크롬: 설치 가능할 때만 버튼 표시
+ const btn=document.getElementById('installBtn');let dp=null;
+ window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();if(standalone)return;dp=e;btn.classList.remove('hide');});
+ btn.addEventListener('click',async()=>{if(!dp)return;btn.classList.add('hide');dp.prompt();try{await dp.userChoice;}catch(_){}dp=null;});
+ window.addEventListener('appinstalled',()=>{btn.classList.add('hide');dp=null;});
+ // 아이폰/아이패드 사파리: 첫 방문 때 한 번만 안내
+ const ua=navigator.userAgent,KEY='gidonote.iosGuideSeen';
+ const isIOS=/iPhone|iPad|iPod/.test(ua)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+ const inApp=/KAKAOTALK|NAVER|Instagram|FBAN|FBAV|Line\/|DaumApps|CriOS|FxiOS|EdgiOS|GSA\//i.test(ua);
+ const safari=/Safari/.test(ua)&&/Version\//.test(ua);
+ let seen=false;try{seen=localStorage.getItem(KEY)==='1';}catch(_){}
+ const sh=document.getElementById('iosSheet');
+ const close=()=>{sh.classList.add('hide');try{localStorage.setItem(KEY,'1');}catch(_){}};
+ if(isIOS&&safari&&!inApp&&!standalone&&!seen)setTimeout(()=>sh.classList.remove('hide'),800);
+ document.getElementById('iosClose').onclick=close;document.getElementById('iosOk').onclick=close;
+ sh.addEventListener('click',e=>{if(e.target===sh)close();});
+})();
+</script>
+</body></html>
