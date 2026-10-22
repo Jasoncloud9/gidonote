@@ -1,0 +1,325 @@
+[index.html](https://github.com/user-attachments/files/33799413/index.html)
+<!DOCTYPE html>
+<html lang="ko"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="기도노트">
+<meta name="theme-color" content="#f7f1e8">
+<title>기도노트 · 소그룹</title>
+<style>
+:root{--bg:#f7f1e8;--card:#fffdf9;--ink:#3d342b;--mute:#8a7d6f;--acc:#b5835a;--acc2:#7d9a83;--line:#e8dccb}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;padding-bottom:80px}
+header{padding:calc(env(safe-area-inset-top) + 16px) 18px 6px}h1{font-size:22px;margin:0}.sub{color:var(--mute);font-size:14px}
+main{padding:0 14px}.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 2px 8px #0000000a}
+h2{font-size:17px;margin:0 0 10px}textarea,input{width:100%;font:inherit;font-size:16px;padding:10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}textarea{min-height:90px;resize:vertical}
+button{font:inherit;border:0;border-radius:10px;padding:10px 14px;background:var(--acc);color:#fff;font-weight:600}button.ghost{background:transparent;color:var(--acc);border:1px solid var(--acc)}button.sm{padding:5px 10px;font-size:13px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.chip{padding:6px 12px;border-radius:20px;border:1px solid var(--line);background:#fff;color:var(--ink);font-weight:400}.chip.on{background:var(--acc2);color:#fff;border-color:var(--acc2)}
+.prompt{background:#fbead6;border-color:#f0cfa8}.done{background:#e8f1ea;border-color:#c5dbc9}
+.streak{display:flex;gap:10px;text-align:center}.streak div{flex:1;background:var(--bg);border-radius:12px;padding:10px}.streak b{font-size:24px;display:block;color:var(--acc)}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}nav button{flex:1;background:none;color:var(--mute);border-radius:0;padding:12px 0;font-size:13px}nav button.on{color:var(--acc)}
+.tabs{display:flex;gap:6px;margin-bottom:10px}.tabs button{flex:1}
+.req{border-bottom:1px solid var(--line);padding:10px 0}.req:last-child{border:0}.req .d{font-size:12px;color:var(--mute)}.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:13px}.cal span{padding:8px 0;border-radius:8px}.cal .h{color:var(--mute);font-size:12px}.cal .x{background:var(--acc2);color:#fff}.cal .t{outline:2px solid var(--acc)}
+.chk{display:flex;gap:8px;align-items:center;padding:6px 0}.chk input{width:20px;height:20px}
+.sum{white-space:pre-wrap;line-height:1.7}.hide{display:none}label{font-size:14px;color:var(--mute);display:block;margin:10px 0 4px}
+
+nav button{font-size:12px}.auth{max-width:420px;margin:30px auto}.err{color:#b4533a;font-size:14px;min-height:18px}
+select{font:inherit;font-size:15px;padding:6px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.feed .who{font-weight:600;font-size:14px}.ans{background:#e8f1ea;border-radius:10px;padding:8px;margin-top:6px;font-size:14px}
+.pr.on{background:var(--acc2)}.code{font-family:ui-monospace,monospace;font-size:18px;letter-spacing:2px;color:var(--acc)}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head><body>
+<header><h1>🕊️ 기도노트</h1><div class="sub" id="today"></div></header>
+<main>
+<section id="v-auth" class="hide"><div class="card auth">
+ <h2 id="a-title">로그인</h2>
+ <div id="a-namebox" class="hide"><label>이름 (소그룹에 보이는 이름)</label><input id="a-name" placeholder="예: 김현욱"></div>
+ <label>이메일</label><input id="a-email" type="email" autocomplete="email">
+ <label>비밀번호 (6자 이상)</label><input id="a-pw" type="password" autocomplete="current-password">
+ <div class="err" id="a-err"></div>
+ <div class="row"><button id="a-go">로그인</button><button class="ghost" id="a-sw">처음이에요 (회원가입)</button></div>
+</div></section>
+<section id="v-today" class="hide">
+ <div class="card" id="prompt"></div>
+ <div class="card"><div class="streak"><div><b id="st-cur">0</b>연속 일수</div><div><b id="st-max">0</b>최장 기록</div><div><b id="st-mon">0</b>이번 달</div></div></div>
+ <div class="card"><h2>오늘의 기도</h2>
+  <label>묵상</label><textarea id="med" placeholder="오늘 기도하며 받은 마음을 짧게 적어보세요"></textarea>
+  <label>오늘의 마음</label><div class="chips" id="moods"></div><input id="moodtxt" placeholder="다른 마음 (직접 입력)">
+  <label>말씀 (선택)</label><input id="verse" placeholder="예: 빌립보서 4:6-7">
+  <label>오늘 기도한 제목</label><div id="todayreqs"></div>
+  <div class="row" style="margin-top:12px"><button id="save">저장하기</button><span class="sub" id="saved"></span></div>
+ </div>
+</section>
+<section id="v-req" class="hide">
+ <div class="card"><h2>새 기도제목</h2><input id="newreq" placeholder="기도제목을 입력하세요"><div class="row"><button id="addreq">추가</button></div></div>
+ <div class="card"><div class="tabs"><button id="t-open">기도 중</button><button id="t-ans" class="ghost">응답받음</button></div><div id="reqlist"></div></div>
+</section>
+<section id="v-grp" class="hide">
+ <div class="card"><div class="row" style="margin:0"><select id="gsel" style="flex:1"></select></div><div id="ginfo" class="sub" style="margin-top:8px"></div></div>
+ <div class="card feed"><h2>함께 기도해요</h2><div id="feed"></div></div>
+ <div class="card"><h2>소그룹 만들기 / 참여</h2>
+  <input id="gname" placeholder="새 소그룹 이름 (예: 화요 셀모임)"><div class="row"><button id="gcreate">만들기</button></div>
+  <label>초대코드로 참여</label><input id="gcode" placeholder="예: K7M2QX" style="text-transform:uppercase"><div class="row"><button class="ghost" id="gjoin">참여하기</button></div>
+ </div>
+</section>
+<section id="v-cal" class="hide">
+ <div class="card"><div class="row" style="justify-content:space-between;margin:0 0 10px"><button class="ghost sm" id="cprev">‹</button><h2 id="clabel" style="margin:0"></h2><button class="ghost sm" id="cnext">›</button></div><div class="cal" id="cal"></div><div id="cday" class="sub" style="margin-top:10px"></div></div>
+</section>
+<section id="v-sum" class="hide">
+ <div class="card"><h2>월간 정리</h2><input type="month" id="smonth"><div class="sum" id="sumtxt" style="margin-top:12px"></div><div class="row"><button id="copy">복사하기</button><span class="sub" id="copied"></span></div></div>
+ <div class="card"><h2>내 계정</h2><div class="sub" id="me"></div>
+  <div class="row"><button class="ghost sm" id="rename">이름 변경</button><button class="ghost sm" id="exp">백업 내보내기</button><button class="ghost sm" id="logout">로그아웃</button></div>
+  <div id="impbox" class="hide" style="margin-top:12px"><p class="sub">이 기기에 예전 기도노트 기록이 있어요. 계정으로 옮길까요? (한 번만)</p><button id="impold">예전 기록 가져오기</button></div>
+ </div>
+</section>
+</main>
+<nav id="nav" class="hide"><button data-v="today">🙏<br>오늘</button><button data-v="req">📜<br>기도제목</button><button data-v="grp">👥<br>소그룹</button><button data-v="cal">📅<br>달력</button><button data-v="sum">📝<br>정리</button></nav>
+<script>
+// ====== 설정: Supabase 프로젝트 값으로 바꾸세요 ======
+const SUPABASE_URL = 'https://zkgxwsppdevxtbjlligh.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_hZ9A86JEZnpETcuS3t6N5A_EeprSSvo';
+// =====================================================
+(function(){
+ const mf={name:"기도노트",short_name:"기도노트",start_url:".",display:"standalone",background_color:"#f7f1e8",theme_color:"#f7f1e8",icons:[{src:"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="#b5835a"/><text x="50" y="68" font-size="56" text-anchor="middle">🕊</text></svg>'),sizes:"any",type:"image/svg+xml"}]};
+ const l=document.createElement('link');l.rel='manifest';l.href='data:application/manifest+json,'+encodeURIComponent(JSON.stringify(mf));document.head.appendChild(l);
+ const ai=document.createElement('link');ai.rel='apple-touch-icon';ai.href=mf.icons[0].src;document.head.appendChild(ai);
+})();
+const OLDKEY='prayerApp.v1',MOODS=['감사','평안','기쁨','기대','사랑','회개','답답함','슬픔','불안','지침'];
+const $=i=>document.getElementById(i);
+const pad=n=>(n<10?'0':'')+n,ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()),T=()=>ymd(new Date());
+const kd=s=>{const p=s.split('-');return +p[1]+'월 '+(+p[2])+'일'};
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const addDays=(s,n)=>{const p=s.split('-');return ymd(new Date(+p[0],p[1]-1,+p[2]+n))};
+const okDate=s=>/^\d{4}-\d{2}-\d{2}$/.test(s||'');
+let sb=null,user=null,profile=null,groups=[],curG=localStorage.getItem('gidonote.group')||null;
+let S={reqs:[],entries:{}};
+function err(e){console.error(e);alert('문제가 생겼어요: '+(e&&e.message||e))}
+function chk(r){if(r.error)throw r.error;return r.data}
+
+// ---- 데이터 매핑 ----
+const toReq=r=>({id:r.id,text:r.text,date:r.created_date,gid:r.shared_group_id,answered:r.answered_date?{date:r.answered_date,note:r.answer_note||''}:null});
+async function loadMine(){
+ const rq=chk(await sb.from('requests').select('*').eq('user_id',user.id).order('created_at',{ascending:false}));
+ const en=chk(await sb.from('daily_entries').select('*').eq('user_id',user.id));
+ S.reqs=rq.map(toReq);S.entries={};
+ en.forEach(e=>S.entries[e.day]={med:e.med||'',moods:e.moods||[],moodText:e.mood_text||'',verse:e.verse||'',prayed:e.prayed||[]});
+}
+async function loadGroups(){
+ const m=chk(await sb.from('group_members').select('group_id, groups(id,name,invite_code,owner_id)').eq('user_id',user.id));
+ groups=m.map(x=>x.groups).filter(Boolean);
+ if(!groups.some(g=>g.id===curG))curG=groups.length?groups[0].id:null;
+}
+function has(d){const e=S.entries[d];return !!(e&&(e.med||(e.moods&&e.moods.length)||(e.prayed&&e.prayed.length)))}
+function curStreak(){let d=T();if(!has(d))d=addDays(d,-1);let c=0;while(has(d)){c++;d=addDays(d,-1)}return c}
+function maxStreak(keys){keys=keys.filter(has).sort();let m=0,c=0,prev=null;keys.forEach(k=>{c=(prev&&addDays(prev,1)===k)?c+1:1;if(c>m)m=c;prev=k});return m}
+
+// ---- 오늘 ----
+let sel=[];
+function renderToday(){
+ const d=new Date();$('today').textContent=d.getFullYear()+'년 '+(d.getMonth()+1)+'월 '+d.getDate()+'일 ('+'일월화수목금토'[d.getDay()]+')';
+ const e=S.entries[T()]||{};$('med').value=e.med||'';$('verse').value=e.verse||'';$('moodtxt').value=e.moodText||'';sel=(e.moods||[]).slice();
+ $('moods').innerHTML=MOODS.map(m=>'<button class="chip'+(sel.includes(m)?' on':'')+'" data-m="'+m+'">'+m+'</button>').join('');
+ const open=S.reqs.filter(r=>!r.answered);
+ $('todayreqs').innerHTML=open.length?open.map(r=>'<label class="chk" style="color:var(--ink)"><input type="checkbox" data-r="'+r.id+'"'+((e.prayed||[]).includes(r.id)?' checked':'')+'>'+esc(r.text)+(r.gid?' 👥':'')+'</label>').join(''):'<p class="sub">기도제목 탭에서 제목을 추가해 보세요.</p>';
+ stats();
+}
+function stats(){
+ const c=curStreak(),ym=T().slice(0,7);
+ $('st-cur').textContent=c;$('st-max').textContent=maxStreak(Object.keys(S.entries));$('st-mon').textContent=Object.keys(S.entries).filter(k=>k.slice(0,7)===ym&&has(k)).length;
+ const p=$('prompt');
+ if(has(T())){p.className='card done';p.innerHTML='🌿 오늘의 기도를 마쳤어요. '+c+'일째 이어가고 있어요. 수고하셨어요.'}
+ else{p.className='card prompt';p.innerHTML=(c?'🕯️ 오늘은 아직 기도 기록이 없어요. '+c+'일 연속 기록을 이어가 볼까요?':'🕯️ 오늘 잠시 주님 앞에 머물러 볼까요? 한 줄이면 충분해요.')+'<br><span class="sub">"쉬지 말고 기도하라" (살전 5:17)</span>'}
+}
+$('moods').onclick=ev=>{const m=ev.target.dataset.m;if(!m)return;const i=sel.indexOf(m);i<0?sel.push(m):sel.splice(i,1);ev.target.classList.toggle('on')};
+$('save').onclick=async()=>{try{
+ const pr=[...document.querySelectorAll('#todayreqs input:checked')].map(x=>x.dataset.r);
+ const e={med:$('med').value.trim(),moods:sel.slice(),moodText:$('moodtxt').value.trim(),verse:$('verse').value.trim(),prayed:pr};
+ chk(await sb.from('daily_entries').upsert({user_id:user.id,day:T(),med:e.med,moods:e.moods,mood_text:e.moodText,verse:e.verse,prayed:pr,updated_at:new Date().toISOString()}));
+ // 공유된 기도제목은 소그룹에도 '기도했어요' 표시
+ const shared=S.reqs.filter(r=>r.gid&&pr.includes(r.id)).map(r=>({request_id:r.id,user_id:user.id,day:T()}));
+ if(shared.length)chk(await sb.from('prayed_marks').upsert(shared,{ignoreDuplicates:true}));
+ S.entries[T()]=e;stats();$('saved').textContent='저장됨 ✓';setTimeout(()=>$('saved').textContent='',2000);
+}catch(x){err(x)}};
+
+// ---- 기도제목 ----
+let tab='open';
+function renderReqs(){
+ $('t-open').className=tab==='open'?'':'ghost';$('t-ans').className=tab==='ans'?'':'ghost';
+ const L=S.reqs.filter(r=>tab==='ans'?r.answered:!r.answered);
+ const opts=r=>'<option value="">🔒 나만 보기</option>'+groups.map(g=>'<option value="'+g.id+'"'+(r.gid===g.id?' selected':'')+'>👥 함께 기도: '+esc(g.name)+'</option>').join('');
+ $('reqlist').innerHTML=L.length?L.map(r=>'<div class="req"><div>'+esc(r.text)+'</div><div class="d">'+kd(r.date)+' 시작'+(r.answered?' · '+kd(r.answered.date)+' 응답 🙌':'')+'</div>'+(r.answered&&r.answered.note?'<div class="sub">'+esc(r.answered.note)+'</div>':'')+
+  '<div class="row"><select data-share="'+r.id+'"'+(groups.length?'':' disabled')+'>'+opts(r)+'</select></div>'+
+  '<div class="row">'+(r.answered?'<button class="ghost sm" data-a="un" data-id="'+r.id+'">응답 취소</button>':'<button class="sm" data-a="ans" data-id="'+r.id+'">응답됨</button>')+'<button class="ghost sm" data-a="edit" data-id="'+r.id+'">수정</button><button class="ghost sm" data-a="del" data-id="'+r.id+'">삭제</button></div></div>').join(''):'<p class="sub">'+(tab==='ans'?'아직 응답받은 기도가 없어요.':'기도 중인 제목이 없어요.')+'</p>';
+}
+$('t-open').onclick=()=>{tab='open';renderReqs()};$('t-ans').onclick=()=>{tab='ans';renderReqs()};
+$('addreq').onclick=async()=>{const t=$('newreq').value.trim();if(!t)return;try{chk(await sb.from('requests').insert({user_id:user.id,text:t,created_date:T()}));$('newreq').value='';await loadMine();renderReqs()}catch(x){err(x)}};
+$('reqlist').onchange=async ev=>{const id=ev.target.dataset.share;if(!id)return;try{chk(await sb.from('requests').update({shared_group_id:ev.target.value||null}).eq('id',id));await loadMine();renderReqs()}catch(x){err(x)}};
+$('reqlist').onclick=async ev=>{const a=ev.target.dataset.a,id=ev.target.dataset.id;if(!a)return;const r=S.reqs.find(x=>x.id===id);let q=null;
+ if(a==='del'){if(!confirm('이 기도제목을 삭제할까요?'))return;q=sb.from('requests').delete().eq('id',id)}
+ if(a==='edit'){const t=prompt('기도제목 수정',r.text);if(t===null)return;const u={text:t.trim()||r.text};const dd=prompt('시작 날짜 (YYYY-MM-DD)',r.date);if(okDate(dd))u.created_date=dd;if(r.answered){const n=prompt('응답 메모',r.answered.note||'');if(n!==null)u.answer_note=n}q=sb.from('requests').update(u).eq('id',id)}
+ if(a==='ans'){let d=prompt('응답받은 날짜 (YYYY-MM-DD)',T());if(d===null)return;if(!okDate(d))d=T();const n=prompt('어떻게 응답하셨나요? (짧은 메모, 소그룹에 공유된 제목이면 함께 보여요)','')||'';q=sb.from('requests').update({answered_date:d,answer_note:n}).eq('id',id)}
+ if(a==='un')q=sb.from('requests').update({answered_date:null,answer_note:null}).eq('id',id);
+ try{chk(await q);await loadMine();renderReqs()}catch(x){err(x)}};
+
+// ---- 소그룹 ----
+async function renderGrp(){
+ $('gsel').innerHTML=groups.length?groups.map(g=>'<option value="'+g.id+'"'+(g.id===curG?' selected':'')+'>'+esc(g.name)+'</option>').join(''):'<option>아직 소그룹이 없어요</option>';
+ const g=groups.find(x=>x.id===curG);
+ if(!g){$('ginfo').textContent='아래에서 소그룹을 만들거나 초대코드로 참여하세요.';$('feed').innerHTML='';return}
+ localStorage.setItem('gidonote.group',curG);
+ $('ginfo').innerHTML='초대코드 <span class="code">'+esc(g.invite_code)+'</span> · 이 코드를 멤버에게 알려주세요 <button class="ghost sm" id="gleave">나가기</button>';
+ $('feed').innerHTML='<p class="sub">불러오는 중…</p>';
+ try{
+  const rs=chk(await sb.from('requests').select('id,text,created_date,answered_date,answer_note,user_id,profiles!requests_user_id_fkey(display_name)').eq('shared_group_id',g.id).order('answered_date',{ascending:true,nullsFirst:true}).order('created_at',{ascending:false}));
+  const ids=rs.map(r=>r.id);
+  const marks=ids.length?chk(await sb.from('prayed_marks').select('request_id,user_id,day').in('request_id',ids)):[];
+  if(!rs.length){$('feed').innerHTML='<p class="sub">아직 함께 기도할 제목이 없어요. 기도제목 탭에서 "함께 기도"로 공유해 보세요.</p>';return}
+  $('feed').innerHTML=rs.map(r=>{const ms=marks.filter(m=>m.request_id===r.id),people=new Set(ms.map(m=>m.user_id)).size,mine=ms.some(m=>m.user_id===user.id&&m.day===T());
+   return '<div class="req"><div class="who">'+esc(r.profiles?r.profiles.display_name:'멤버')+(r.user_id===user.id?' (나)':'')+' <span class="d">· '+kd(r.created_date)+'</span></div><div>'+esc(r.text)+'</div>'+
+   (r.answered_date?'<div class="ans">🙌 '+kd(r.answered_date)+' 응답받았어요'+(r.answer_note?'<br>'+esc(r.answer_note):'')+'</div>':'')+
+   '<div class="row"><button class="sm pr'+(mine?' on':'')+'" data-pray="'+r.id+'">'+(mine?'🙏 오늘 기도했어요':'🙏 기도했어요')+'</button><span class="sub">'+people+'명이 '+ms.length+'번 기도했어요</span></div></div>'}).join('');
+ }catch(x){$('feed').innerHTML='';err(x)}
+}
+$('gsel').onchange=()=>{curG=$('gsel').value;renderGrp()};
+$('feed').onclick=async ev=>{const id=ev.target.dataset.pray;if(!id)return;try{
+ if(ev.target.classList.contains('on'))chk(await sb.from('prayed_marks').delete().match({request_id:id,user_id:user.id,day:T()}));
+ else chk(await sb.from('prayed_marks').upsert({request_id:id,user_id:user.id,day:T()},{ignoreDuplicates:true}));
+ renderGrp()}catch(x){err(x)}};
+$('ginfo').onclick=async ev=>{if(ev.target.id!=='gleave')return;if(!confirm('이 소그룹에서 나갈까요? 내가 공유한 기도제목은 나만 보기로 바뀌어요.'))return;try{chk(await sb.rpc('leave_group',{p_group:curG}));curG=null;await loadGroups();await loadMine();renderGrp()}catch(x){err(x)}};
+$('gcreate').onclick=async()=>{const n=$('gname').value.trim();if(!n)return;try{const g=chk(await sb.rpc('create_group',{p_name:n}));curG=g.id;$('gname').value='';await loadGroups();renderGrp();alert('소그룹을 만들었어요! 초대코드: '+g.invite_code)}catch(x){err(x)}};
+$('gjoin').onclick=async()=>{const c=$('gcode').value.trim();if(!c)return;try{curG=chk(await sb.rpc('join_group',{p_code:c}));$('gcode').value='';await loadGroups();renderGrp()}catch(x){alert(/invalid code/.test(x.message)?'초대코드를 다시 확인해 주세요.':'참여하지 못했어요: '+x.message)}};
+
+// ---- 달력 ----
+let cm=new Date();cm=new Date(cm.getFullYear(),cm.getMonth(),1);
+function renderCal(){
+ const y=cm.getFullYear(),m=cm.getMonth(),first=new Date(y,m,1).getDay(),n=new Date(y,m+1,0).getDate();$('clabel').textContent=y+'년 '+(m+1)+'월';
+ let h='일월화수목금토'.split('').map(x=>'<span class="h">'+x+'</span>').join('');for(let i=0;i<first;i++)h+='<span></span>';
+ for(let d=1;d<=n;d++){const k=y+'-'+pad(m+1)+'-'+pad(d);h+='<span data-k="'+k+'" class="'+(has(k)?'x ':'')+(k===T()?'t':'')+'">'+d+'</span>'}$('cal').innerHTML=h;$('cday').textContent='기록한 날은 초록색으로 표시돼요. 날짜를 누르면 묵상을 볼 수 있어요.'}
+$('cal').onclick=ev=>{const k=ev.target.dataset.k;if(!k)return;const e=S.entries[k];$('cday').innerHTML='<b>'+kd(k)+'</b><br>'+(e?esc(e.med||'(묵상 없음)')+(e.moods&&e.moods.length?'<br>마음: '+esc(e.moods.join(', ')):'')+(e.verse?'<br>말씀: '+esc(e.verse):''):'기록이 없어요.')};
+$('cprev').onclick=()=>{cm=new Date(cm.getFullYear(),cm.getMonth()-1,1);renderCal()};$('cnext').onclick=()=>{cm=new Date(cm.getFullYear(),cm.getMonth()+1,1);renderCal()};
+
+// ---- 월간 정리 ----
+function summary(ym){
+ const p=ym.split('-'),y=+p[0],m=+p[1],n=new Date(y,m,0).getDate(),isCur=ym===T().slice(0,7),tot=isCur?new Date().getDate():n;
+ const days=Object.keys(S.entries).filter(k=>k.slice(0,7)===ym&&has(k)).sort();
+ const cnt={};days.forEach(k=>{const e=S.entries[k];(e.moods||[]).concat(e.moodText?[e.moodText]:[]).forEach(x=>cnt[x]=(cnt[x]||0)+1)});
+ const top=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).slice(0,3);
+ const ans=S.reqs.filter(r=>r.answered&&r.answered.date.slice(0,7)===ym),nw=S.reqs.filter(r=>r.date.slice(0,7)===ym);
+ let ex=days.map(k=>[k,S.entries[k].med]).filter(x=>x[1]);if(ex.length>3)ex=[ex[0],ex[Math.floor(ex.length/2)],ex[ex.length-1]];
+ let t=y+'년 '+m+'월의 기도 정리\n\n';
+ if(!days.length)return t+'이 달에는 아직 기도 기록이 없어요. 오늘부터 한 줄씩 시작해 보아요.';
+ t+=(isCur?'오늘까지 '+tot+'일 중 ':m+'월 '+n+'일 중 ')+days.length+'일 동안 기도로 하루를 열었어요'+(days.length===tot?'. 하루도 빠짐없이 주님 앞에 나아갔네요!':'.')+' 가장 길게 이어간 기도는 '+maxStreak(days)+'일 연속이었어요.\n';
+ if(top.length)t+='이 달 가장 많이 머문 마음은 '+top.map(x=>'"'+x+'"('+cnt[x]+'번)').join(', ')+'이었어요.\n';
+ t+=ans.length?'\n이 달에 응답받은 기도 '+ans.length+'가지:\n'+ans.map(r=>'· '+r.text+' ('+kd(r.answered.date)+(r.answered.note?', '+r.answered.note:'')+')').join('\n')+'\n':'\n이 달에 응답으로 표시한 기도는 없지만, 기다림도 기도의 일부예요.\n';
+ if(nw.length)t+='\n새로 올려드린 기도제목 '+nw.length+'가지:\n'+nw.map(r=>'· '+r.text).join('\n')+'\n';
+ if(ex.length)t+='\n묵상 한 줄:\n'+ex.map(x=>{const s=x[1].replace(/\s+/g,' ');return'· '+kd(x[0])+': "'+(s.length>60?s.slice(0,60)+'…':s)+'"'}).join('\n')+'\n';
+ return t+'\n한 달 동안 함께하신 주님께 감사드립니다.';
+}
+function renderSum(){
+ if(!$('smonth').value)$('smonth').value=T().slice(0,7);$('sumtxt').textContent=summary($('smonth').value);
+ $('me').textContent=(profile?profile.display_name:'')+' · '+user.email;
+ $('impbox').classList.toggle('hide',!(localStorage.getItem(OLDKEY)&&!localStorage.getItem(OLDKEY+'.imported.'+user.id)));
+}
+$('smonth').onchange=renderSum;
+$('copy').onclick=()=>{const t=$('sumtxt').textContent,ok=()=>$('copied').textContent='복사됨 ✓',fb=()=>{const a=document.createElement('textarea');a.value=t;document.body.appendChild(a);a.select();document.execCommand('copy');a.remove();ok()};navigator.clipboard?navigator.clipboard.writeText(t).then(ok,fb):fb()};
+$('exp').onclick=()=>{const b=new Blob([JSON.stringify(S,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='기도노트-백업-'+T()+'.json';a.click()};
+$('rename').onclick=async()=>{const n=prompt('소그룹에 보일 이름',profile&&profile.display_name);if(!n||!n.trim())return;try{chk(await sb.from('profiles').update({display_name:n.trim().slice(0,40)}).eq('id',user.id));profile.display_name=n.trim().slice(0,40);renderSum()}catch(x){err(x)}};
+$('logout').onclick=async()=>{await sb.auth.signOut();location.reload()};
+
+// ---- 예전 기록 가져오기 (한 번) ----
+$('impold').onclick=async()=>{try{
+ const old=JSON.parse(localStorage.getItem(OLDKEY)||'null');if(!old||!old.reqs||!old.entries)throw new Error('예전 기록을 읽을 수 없어요');
+ const map={};
+ for(const r of old.reqs){const row={user_id:user.id,text:String(r.text||'').slice(0,1000)||'(내용 없음)',created_date:okDate(r.date)?r.date:T()};
+  if(r.answered){row.answered_date=okDate(r.answered.date)?r.answered.date:T();row.answer_note=r.answered.note||''}
+  const ins=chk(await sb.from('requests').insert(row).select('id').single());map[r.id]=ins.id}
+ const rows=Object.keys(old.entries).filter(okDate).map(k=>{const e=old.entries[k]||{};return{user_id:user.id,day:k,med:e.med||'',moods:e.moods||[],mood_text:e.moodText||'',verse:e.verse||'',prayed:(e.prayed||[]).map(i=>map[i]).filter(Boolean)}});
+ for(let i=0;i<rows.length;i+=200)chk(await sb.from('daily_entries').upsert(rows.slice(i,i+200),{onConflict:'user_id,day',ignoreDuplicates:true}));
+ localStorage.setItem(OLDKEY+'.imported.'+user.id,T());await loadMine();renderSum();
+ alert('가져오기 완료! 기도제목 '+old.reqs.length+'개, 기도 기록 '+rows.length+'일');
+}catch(x){err(x)}};
+
+// ---- 화면 전환 / 로그인 ----
+const VIEWS={today:renderToday,req:renderReqs,grp:renderGrp,cal:renderCal,sum:renderSum};
+function show(v){['auth','today','req','grp','cal','sum'].forEach(x=>$('v-'+x).classList.toggle('hide',x!==v));$('nav').classList.toggle('hide',v==='auth');
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));if(VIEWS[v])VIEWS[v]();scrollTo(0,0)}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>show(b.dataset.v));
+let signup=false;
+$('a-sw').onclick=()=>{signup=!signup;$('a-title').textContent=signup?'회원가입':'로그인';$('a-go').textContent=signup?'가입하기':'로그인';$('a-sw').textContent=signup?'이미 계정이 있어요':'처음이에요 (회원가입)';$('a-namebox').classList.toggle('hide',!signup);$('a-err').textContent=''};
+$('a-go').onclick=async()=>{const email=$('a-email').value.trim(),password=$('a-pw').value;$('a-err').textContent='';
+ if(!email||password.length<6){$('a-err').textContent='이메일과 6자 이상 비밀번호를 입력해 주세요.';return}
+ try{if(signup){const name=$('a-name').value.trim();if(!name){$('a-err').textContent='이름을 입력해 주세요.';return}
+   const r=await sb.auth.signUp({email,password,options:{data:{display_name:name}}});if(r.error)throw r.error;
+   if(!r.data.session){$('a-err').textContent='확인 메일을 보냈어요. 메일의 링크를 누른 뒤 로그인해 주세요.';return}}
+  else{const r=await sb.auth.signInWithPassword({email,password});if(r.error)throw r.error}
+ }catch(x){$('a-err').textContent=/Invalid login/i.test(x.message)?'이메일 또는 비밀번호가 맞지 않아요.':/registered/i.test(x.message)?'이미 가입된 이메일이에요. 로그인해 주세요.':x.message}};
+let booted=false;
+async function boot(session){
+ if(!session){user=null;booted=false;show('auth');return}
+ if(booted&&user&&user.id===session.user.id)return;booted=true;user=session.user;
+ try{profile=chk(await sb.from('profiles').select('*').eq('id',user.id).maybeSingle());await Promise.all([loadMine(),loadGroups()]);
+  const h=location.hash.slice(1);show(VIEWS[h]?h:((localStorage.getItem(OLDKEY)&&!localStorage.getItem(OLDKEY+'.imported.'+user.id))?'sum':'today'))}catch(x){err(x)}
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&user&&!$('v-today').classList.contains('hide'))renderToday()});
+// ====== 체험 모드 (?demo): Supabase 대신 메모리 속 예시 데이터 ======
+const DEMO=/[?&]demo\b/.test(location.search);
+function makeDemo(){
+ const uid=()=>'d'+Math.random().toString(36).slice(2,10),D=n=>addDays(T(),-n),now=()=>new Date().toISOString();
+ const ME='u-me',G='g-1';
+ const db={
+  profiles:[{id:ME,display_name:'현욱'},{id:'u-2',display_name:'은혜'},{id:'u-3',display_name:'성민'},{id:'u-4',display_name:'다윗'}],
+  groups:[{id:G,name:'찬양팀 기도방',invite_code:'K7M2QX',owner_id:ME}],
+  group_members:[ME,'u-2','u-3','u-4'].map(u=>({group_id:G,user_id:u})),
+  requests:[
+   {id:'r1',user_id:ME,text:'주일 찬양 인도에 성령의 기름부으심이 있도록',created_date:D(9),shared_group_id:G},
+   {id:'r2',user_id:ME,text:'NCF 영상 프로젝트 잘 마무리되도록',created_date:D(6),shared_group_id:null},
+   {id:'r3',user_id:ME,text:'아내와 가정의 평안',created_date:D(12),shared_group_id:null},
+   {id:'r4',user_id:ME,text:'새 인이어 시스템 문제 해결',created_date:D(15),shared_group_id:G,answered_date:D(2),answer_note:'워크숍 후 모든 팀원이 잘 들린다고 했어요. 감사!'},
+   {id:'r5',user_id:'u-2',text:'어머니 수술이 잘 되도록 기도 부탁드려요',created_date:D(8),shared_group_id:G,answered_date:D(1),answer_note:'수술 잘 끝났고 회복 중이세요. 기도해 주셔서 감사해요 🙏'},
+   {id:'r6',user_id:'u-3',text:'이직 준비 중인데 길을 열어주시도록',created_date:D(5),shared_group_id:G},
+   {id:'r7',user_id:'u-4',text:'새벽예배 꾸준히 나갈 수 있도록',created_date:D(3),shared_group_id:G},
+   {id:'r8',user_id:'u-2',text:'청년부 수련회 준비',created_date:D(1),shared_group_id:G}
+  ].map((r,i)=>Object.assign({answered_date:null,answer_note:null,created_at:new Date(Date.now()-i*1e6).toISOString()},r)),
+  daily_entries:[],prayed_marks:[]
+ };
+ const meds=['시편 23편을 읽으며 부족함이 없다는 고백이 마음에 남았다.','바쁜 하루였지만 짧게라도 주님께 맡겼다.','찬양 연습 중에 마음이 많이 풀렸다. 감사.','염려가 많았는데 빌립보서 4장으로 평안을 얻었다.','가족을 위해 오래 기도했다.','영상 마감 때문에 답답했지만 지혜를 구했다.','새벽에 조용히 감사 제목을 적어보았다.','팀원들 한 명 한 명 이름을 부르며 기도했다.','말씀보다 내 생각이 앞섰던 하루를 회개했다.','기다림 속에서도 신실하신 하나님을 기억한다.'];
+ const mo=[['감사','평안'],['지침'],['기쁨','감사'],['불안','평안'],['사랑'],['답답함','기대'],['감사'],['사랑','기쁨'],['회개'],['기대','평안']];
+ for(let i=1;i<=10;i++)db.daily_entries.push({user_id:ME,day:D(i),med:meds[i-1],moods:mo[i-1],mood_text:'',verse:i%3?'':'빌립보서 4:6-7',prayed:i<6?['r1','r2']:['r3']});
+ [['r1','u-2',0],['r1','u-3',1],['r1','u-4',0],['r1','u-2',2],['r5',ME,3],['r5','u-3',2],['r5','u-4',4],['r5',ME,2],['r6',ME,1],['r6','u-2',0],['r7','u-3',0],['r8','u-4',0],['r4','u-2',5]].forEach(m=>db.prayed_marks.push({request_id:m[0],user_id:m[1],day:D(m[2])}));
+ const PK={profiles:['id'],groups:['id'],group_members:['group_id','user_id'],requests:['id'],daily_entries:['user_id','day'],prayed_marks:['request_id','user_id','day']};
+ function Q(t){this.t=t;this.op='select';this.f=[];this.one=0;this.ord=[]}
+ Q.prototype={select(){if(this.op==='insert')this.ret=1;return this},eq(k,v){this.f.push(r=>r[k]===v);return this},in(k,a){this.f.push(r=>a.includes(r[k]));return this},
+  match(o){this.f.push(r=>Object.keys(o).every(k=>r[k]===o[k]));return this},order(k,o){this.ord.push([k,o]);return this},single(){this.one=1;return this},maybeSingle(){this.one=2;return this},
+  insert(v){this.op='insert';this.v=[].concat(v);return this},upsert(v,o){this.op='upsert';this.v=[].concat(v);this.o=o||{};return this},update(v){this.op='update';this.v=v;return this},delete(){this.op='delete';return this},
+  then(res,rej){try{res({data:this.run(),error:null})}catch(e){res({data:null,error:e})}},
+  run(){const tb=db[this.t],hit=r=>this.f.every(f=>f(r)),pk=PK[this.t],same=(a,b)=>pk.every(k=>a[k]===b[k]);
+   if(this.op==='insert'){const out=this.v.map(v=>{const r=Object.assign({id:uid(),created_at:now(),answered_date:null,answer_note:null,shared_group_id:null},v);tb.unshift(r);return r});return this.one?out[0]:out}
+   if(this.op==='upsert'){this.v.forEach(v=>{const e=tb.find(r=>same(r,v));if(e){if(!this.o.ignoreDuplicates)Object.assign(e,v)}else tb.push(Object.assign({},v))});return null}
+   if(this.op==='update'){tb.filter(hit).forEach(r=>Object.assign(r,this.v));return null}
+   if(this.op==='delete'){db[this.t]=tb.filter(r=>!hit(r));return null}
+   let out=tb.filter(hit).map(r=>Object.assign({},r));
+   if(this.t==='requests')out.forEach(r=>r.profiles=db.profiles.find(p=>p.id===r.user_id)||null);
+   if(this.t==='group_members')out.forEach(r=>r.groups=db.groups.find(g=>g.id===r.group_id)||null);
+   this.ord.slice().reverse().forEach(([k,o])=>{const asc=!o||o.ascending!==false,nf=o&&o.nullsFirst;out.sort((a,b)=>{const x=a[k],y=b[k];if(x==y)return 0;if(x==null)return nf?-1:1;if(y==null)return nf?1:-1;return (x<y?-1:1)*(asc?1:-1)})});
+   return this.one?(out[0]||null):out}};
+ const user={id:ME,email:'demo@gidonote.app'};
+ return{from:t=>new Q(t),
+  rpc:async(fn,a)=>{if(fn==='create_group'){const g={id:uid(),name:a.p_name,invite_code:Math.random().toString(36).slice(2,8).toUpperCase(),owner_id:ME};db.groups.push(g);db.group_members.push({group_id:g.id,user_id:ME});return{data:g,error:null}}
+   if(fn==='join_group'){const g=db.groups.find(x=>x.invite_code===String(a.p_code).trim().toUpperCase());if(!g)return{data:null,error:new Error('invalid code')};if(!db.group_members.some(m=>m.group_id===g.id&&m.user_id===ME))db.group_members.push({group_id:g.id,user_id:ME});return{data:g.id,error:null}}
+   if(fn==='leave_group'){db.requests.forEach(r=>{if(r.user_id===ME&&r.shared_group_id===a.p_group)r.shared_group_id=null});db.group_members=db.group_members.filter(m=>!(m.group_id===a.p_group&&m.user_id===ME));return{data:null,error:null}}},
+  auth:{getSession:async()=>({data:{session:{user}}}),onAuthStateChange(){},signOut:async()=>{location.href=location.pathname+'?demo'}}};
+}
+if(DEMO){sb=makeDemo();const b=document.createElement('span');b.textContent='체험 모드';b.style.cssText='margin-left:8px;font-size:12px;background:#7d9a83;color:#fff;border-radius:10px;padding:2px 8px;vertical-align:middle';document.querySelector('header h1').appendChild(b);
+ sb.auth.getSession().then(r=>boot(r.data.session));}
+else if(SUPABASE_URL.indexOf('http')!==0||!window.supabase){
+ $('today').textContent='';document.querySelector('main').innerHTML='<div class="card prompt">⚙️ 설정이 필요해요. index.html 위쪽의 SUPABASE_URL과 SUPABASE_ANON_KEY를 Supabase 프로젝트 값으로 바꿔 주세요.</div>';
+}else{
+ sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true}});
+ sb.auth.getSession().then(r=>boot(r.data.session));
+ sb.auth.onAuthStateChange((ev,s)=>{setTimeout(()=>boot(s),0)});
+}
+</script></body></html>
